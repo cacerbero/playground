@@ -1,15 +1,52 @@
+import { initializeApp } from "firebase/app";
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyBiky1i346MS8w-S9fwyxvQ4zVy_Y3pSnY",
+  authDomain: "playground-f462b.firebaseapp.com",
+  projectId: "playground-f462b",
+  storageBucket: "playground-f462b.firebasestorage.app",
+  messagingSenderId: "1034492625686",
+  appId: "1:1034492625686:web:30462a74efd373f3934637",
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+async function agregarEntrada(S1, T1, A1, C1, Su1, D1) {
+  try {
+    const docRef = await addDoc(collection(db, "entradas"), {
+      s: S1,
+      t: T1,
+      a: A1,
+      c: C1,
+      source: Su1,
+      date: D1,
+    });
+    console.log("Documento escrito con ID: ", docRef.id);
+  } catch (e) {
+    console.error("Error al añadir documento: ", e);
+  }
+}
+
 let bdg = {
-  data: null, 
-  hBal: null, 
-  hInc: null, 
-  hExp: null, 
-  hList: null, 
-  hIncomeForm: null, 
-  hExpenseForm: null, 
-  fIncomeID: null, fIncomeSource: null, fIncomeAmt: null,
-  fExpenseID: null, fExpenseTxt: null, fExpenseAmt: null, fExpenseCategory: null,
+  data: null,
+  hBal: null,
+  hInc: null,
+  hExp: null,
+  hList: null,
+  hIncomeForm: null,
+  hExpenseForm: null,
+  fIncomeID: null,
+  fIncomeSource: null,
+  fIncomeAmt: null,
+  fExpenseID: null,
+  fExpenseTxt: null,
+  fExpenseAmt: null,
+  fExpenseCategory: null,
   selectedMonth: null,
-  
+
   init: () => {
     bdg.hBal = document.getElementById("balanceAm");
     bdg.hInc = document.getElementById("incomeAm");
@@ -34,18 +71,24 @@ let bdg = {
 
     const monthSelect = document.getElementById("monthSelect");
     const currentDate = new Date();
-    const currentMonth = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
-    
+    const currentMonth = currentDate.toLocaleString("default", {
+      month: "long",
+      year: "numeric",
+    });
+
     const months = [];
     for (let i = 0; i < 12; i++) {
       const month = new Date(currentDate.getFullYear(), i);
-      const monthString = month.toLocaleString('default', { month: 'long', year: 'numeric' });
+      const monthString = month.toLocaleString("default", {
+        month: "long",
+        year: "numeric",
+      });
       months.push(monthString);
     }
 
-    monthSelect.innerHTML = '';
-    months.forEach(month => {
-      const option = document.createElement('option');
+    monthSelect.innerHTML = "";
+    months.forEach((month) => {
+      const option = document.createElement("option");
       option.value = month;
       option.textContent = month;
       monthSelect.appendChild(option);
@@ -56,17 +99,17 @@ let bdg = {
 
     monthSelect.addEventListener("change", (e) => {
       bdg.selectedMonth = e.target.value;
-      bdg.draw(); 
+      bdg.draw();
     });
 
     bdg.draw();
 
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
       console.log("Service Worker is controlling the page");
     }
   },
 
-  toggleIncome: id => {
+  toggleIncome: (id) => {
     console.log("Toggle income function called with id:", id);
     if (id === false) {
       bdg.fIncomeID.value = "";
@@ -83,7 +126,7 @@ let bdg = {
     }
   },
 
-  toggleExpense: id => {
+  toggleExpense: (id) => {
     console.log("Toggle expense function called with id:", id);
     if (id === false) {
       bdg.fExpenseID.value = "";
@@ -103,12 +146,18 @@ let bdg = {
   },
 
   draw: () => {
-    let bal = 0, inc = 0, exp = 0, row;
+    let bal = 0,
+      inc = 0,
+      exp = 0,
+      row;
 
     bdg.hList.innerHTML = "";
     bdg.entries.forEach((entry, i) => {
       const entryDate = new Date(entry.date);
-      const entryMonth = entryDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+      const entryMonth = entryDate.toLocaleString("default", {
+        month: "long",
+        year: "numeric",
+      });
       if (entryMonth === bdg.selectedMonth) {
         if (entry.s == "+") {
           inc += entry.a;
@@ -128,7 +177,8 @@ let bdg = {
       }
     });
 
-    bdg.hBal.innerHTML = bal < 0 ? `-$${Math.abs(bal).toFixed(2)}` : `$${bal.toFixed(2)}`;
+    bdg.hBal.innerHTML =
+      bal < 0 ? `-$${Math.abs(bal).toFixed(2)}` : `$${bal.toFixed(2)}`;
     bdg.hInc.innerHTML = `$${inc.toFixed(2)}`;
     bdg.hExp.innerHTML = `$${exp.toFixed(2)}`;
   },
@@ -140,7 +190,7 @@ let bdg = {
       a: parseFloat(bdg.fIncomeAmt.value),
       c: "",
       source: bdg.fIncomeSource.value,
-      date: new Date().toISOString()
+      date: new Date().toISOString(),
     };
 
     if (bdg.fIncomeID.value == "") {
@@ -156,34 +206,43 @@ let bdg = {
   },
 
   saveExpense: () => {
-    let data = {
-      s: "-",
-      t: bdg.fExpenseTxt.value,
-      a: parseFloat(bdg.fExpenseAmt.value),
-      c: bdg.fExpenseCategory.value,
-      source: "",
-      date: new Date().toISOString()
-    };
+    // let data = {
+    //   s: "-",
+    //   t: bdg.fExpenseTxt.value,
+    //   a: parseFloat(bdg.fExpenseAmt.value),
+    //   c: bdg.fExpenseCategory.value,
+    //   source: "",
+    //   date: new Date().toISOString(),
+    // };
 
-    if (bdg.fExpenseID.value == "") {
-      bdg.entries.push(data);
-    } else {
-      bdg.entries[parseInt(bdg.fExpenseID.value)] = data;
-    }
-    localStorage.setItem("entries", JSON.stringify(bdg.entries));
+    agregarEntrada(
+      "-",
+      bdg.fExpenseTxt.value,
+      parseFloat(bdg.fExpenseAmt.value),
+      bdg.fExpenseCategory.value,
+      "",
+      new Date().toISOString()
+    );
 
-    bdg.toggleExpense(false);
-    bdg.draw();
-    return false;
+    // if (bdg.fExpenseID.value == "") {
+    //   bdg.entries.push(data);
+    // } else {
+    //   bdg.entries[parseInt(bdg.fExpenseID.value)] = data;
+    // }
+    // localStorage.setItem("entries", JSON.stringify(bdg.entries));
+
+    // bdg.toggleExpense(false);
+    // bdg.draw();
+    // return false;
   },
 
-  del: id => {
+  del: (id) => {
     if (confirm("Delete entry?")) {
       bdg.entries.splice(id, 1);
       localStorage.setItem("entries", JSON.stringify(bdg.entries));
       bdg.draw();
     }
-  }
+  },
 };
 
 window.onload = bdg.init;
