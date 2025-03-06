@@ -1,4 +1,14 @@
 import { initializeApp } from "firebase/app";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs,
+  updateDoc,
+  doc,
+  deleteDoc,
+  Timestamp,
+} from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -10,9 +20,72 @@ const firebaseConfig = {
   appId: "1:1034492625686:web:30462a74efd373f3934637",
 };
 
+import { collection, addDoc } from "firebase/firestore";
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+async function addTestDataToFirebase() {
+  //object to be added
+  const testData = [
+    {
+      name: "Test 1",
+      amount: 100,
+      category: "Needs",
+      date: new Date().toISOString(),
+    },
+    {
+      name: "Test 2",
+      amount: 150,
+      category: "Wants",
+      date: new Date().toISOString(),
+    },
+    {
+      name: "Test 3",
+      amount: 200,
+      category: "Culture",
+      date: new Date().toISOString(),
+    },
+    {
+      name: "Test 4",
+      amount: 50,
+      category: "Unexpected",
+      date: new Date().toISOString(),
+    },
+    {
+      name: "Test 5",
+      amount: 250,
+      category: "Needs",
+      date: new Date().toISOString(),
+    },
+  ];
+
+  // Reference to your Firebase collection (change 'test' to your desired collection name)
+  const collectionRef = collection(db, "test");
+
+  // Add each test entry to the collection
+  for (const data of testData) {
+    try {
+      const docRef = await addDoc(collectionRef, data); // Correct usage of addDoc
+      console.log("Document written with ID: ", docRef.id);
+    } catch (e) {
+      console.error("Error adding document: ", e);
+    }
+  }
+}
+
+// Call the function to add the data to Firebase
+addTestDataToFirebase();
+
+const testData = {
+  s: "-",
+  t: "Coffee for breakfast", // Description (replace with your own data)
+  a: 5.99, // Amount (replace with your own value)
+  c: "wants", // Category (replace with your own choice)
+  source: "cash", // Source (or leave blank as needed)
+  date: new Date().toISOString(), // Current date in ISO format
+};
 
 async function agregarEntrada(S1, T1, A1, C1, Su1, D1) {
   try {
