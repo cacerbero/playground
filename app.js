@@ -1,24 +1,24 @@
-import { initializeApp } from "firebase/app";
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  getDocs,
-  updateDoc,
-  doc,
-  deleteDoc,
-  Timestamp,
-} from "firebase/firestore";
+// import { initializeApp } from "firebase/app";
+// import {
+//   getFirestore,
+//   collection,
+//   addDoc,
+//   getDocs,
+//   updateDoc,
+//   doc,
+//   deleteDoc,
+//   Timestamp,
+// } from "firebase/firestore";
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBiky1i346MS8w-S9fwyxvQ4zVy_Y3pSnY",
-  authDomain: "playground-f462b.firebaseapp.com",
-  projectId: "playground-f462b",
-  storageBucket: "playground-f462b.firebasestorage.app",
-  messagingSenderId: "1034492625686",
-  appId: "1:1034492625686:web:30462a74efd373f3934637",
-};
+// // Your web app's Firebase configuration
+// const firebaseConfig = {
+//   apiKey: "AIzaSyBiky1i346MS8w-S9fwyxvQ4zVy_Y3pSnY",
+//   authDomain: "playground-f462b.firebaseapp.com",
+//   projectId: "playground-f462b",
+//   storageBucket: "playground-f462b.firebasestorage.app",
+//   messagingSenderId: "1034492625686",
+//   appId: "1:1034492625686:web:30462a74efd373f3934637",
+// };
 
 
 // Initialize Firebase
