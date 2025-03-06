@@ -20,7 +20,6 @@ const firebaseConfig = {
   appId: "1:1034492625686:web:30462a74efd373f3934637",
 };
 
-import { collection, addDoc } from "firebase/firestore";
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
