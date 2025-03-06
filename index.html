@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="description" content="Budget Planner">
@@ -8,7 +9,24 @@
   <link rel="icon" href="favicon.png" type="image/png">
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
+  <script>
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+    import { getFirestore, collection, doc, Timestamp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBiky1i346MS8w-S9fwyxvQ4zVy_Y3pSnY",
+      authDomain: "playground-f462b.firebaseapp.com",
+      projectId: "playground-f462b",
+      storageBucket: "playground-f462b.firebasestorage.app",
+      messagingSenderId: "1034492625686",
+      appId: "1:1034492625686:web:30462a74efd373f3934637",
+    };
 
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+  </script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js').then(registration => {
@@ -17,7 +35,7 @@
         console.log('Service Worker registration failed:', error);
       });
     }
-  </script>    
+  </script>
 
   <!-- <script src="app.js" defer></script> -->
 </head>
@@ -26,7 +44,7 @@
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-CBX7MYS8PL"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
+  function gtag() { dataLayer.push(arguments); }
   gtag('js', new Date());
 
   gtag('config', 'G-CBX7MYS8PL');
@@ -57,10 +75,10 @@
       <div id="expenseAm">$0</div>
     </section>
   </div>
-<div>
-  <!-- New Test Button -->
-  <button id="testBtn" onclick="addTestDataToFirebase()">Test</button>
-</div>
+  <div>
+    <!-- New Test Button -->
+    <button id="testBtn" onclick="addTestDataToFirebase()">Test</button>
+  </div>
 
 
   <section id="entries">
@@ -87,7 +105,8 @@
     </div>
 
     <div class="entry-card">
-      <button id="newExpenseBtn" onclick="bdg.toggleExpense(true)" aria-label="Create a new expense">New Expense</button>
+      <button id="newExpenseBtn" onclick="bdg.toggleExpense(true)" aria-label="Create a new expense">New
+        Expense</button>
       <div id="listExpense"></div>
       <section id="expenseForm" aria-labelledby="expenseFormTitle" class="hidden">
         <h2 id="expenseFormTitle">Expense Form</h2>
@@ -112,4 +131,5 @@
   </section>
   <script type="module" src="app.js"></script>
 </body>
+
 </html>
