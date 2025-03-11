@@ -157,6 +157,10 @@ header select:focus {
   outline: 2px solid #154b7f; 
 }
 
+.hidden {
+  display: none;
+}
+
 /* Entries List Styling */
 .entry {
   display: flex;
