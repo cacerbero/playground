@@ -9,8 +9,14 @@
 //   deleteDoc,
 //   Timestamp,
 // } from "firebase/firestore";
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
-import { getFirestore, addDoc, collection, doc, Timestamp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import {
+  getFirestore,
+  addDoc,
+  collection,
+  doc,
+  Timestamp,
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -21,7 +27,6 @@ const firebaseConfig = {
   messagingSenderId: "1034492625686",
   appId: "1:1034492625686:web:30462a74efd373f3934637",
 };
-
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -78,8 +83,15 @@ async function addTestDataToFirebase() {
 
 // Call the function to add the data to Firebase
 addTestDataToFirebase();
-
-const testData = {
+/*
+s: "+", represents the type of entry. "+" for income, "-" for expense.
+t: "",  represents the description of the income source (optional for income in this case).
+a: parseFloat(bdg.fIncomeAmt.value), // The amount of income.
+  c: "", This represents the category (left empty because income doesn't have a category in your case).
+  source: bdg.fIncomeSource.value, The source of the income (from the form input).
+  date: new Date().toISOString(),  The date when the income is recorded (current date)
+*/
+const testData2 = {
   s: "-",
   t: "Coffee for breakfast", // Description (replace with your own data)
   a: 5.99, // Amount (replace with your own value)
@@ -104,219 +116,293 @@ async function agregarEntrada(S1, T1, A1, C1, Su1, D1) {
   }
 }
 
+// Make the function accessible in the global window object
+window.agregarEntrada = agregarEntrada;
+window.testData2 = testData2;  // This makes 'testData' globally accessible
+
+
 let bdg = {
-  data: null,
-  hBal: null,
-  hInc: null,
-  hExp: null,
-  hList: null,
-  hIncomeForm: null,
-  hExpenseForm: null,
-  fIncomeID: null,
+  // Declare necessary DOM elements
   fIncomeSource: null,
   fIncomeAmt: null,
-  fExpenseID: null,
-  fExpenseTxt: null,
-  fExpenseAmt: null,
-  fExpenseCategory: null,
-  selectedMonth: null,
+  hIncomeForm: null,
 
+  // Initialize DOM elements
   init: () => {
-    bdg.hBal = document.getElementById("balanceAm");
-    bdg.hInc = document.getElementById("incomeAm");
-    bdg.hExp = document.getElementById("expenseAm");
-    bdg.hList = document.getElementById("list");
-    bdg.hIncomeForm = document.getElementById("incomeForm");
-    bdg.hExpenseForm = document.getElementById("expenseForm");
-    bdg.fIncomeID = document.getElementById("incomeFormID");
     bdg.fIncomeSource = document.getElementById("incomeFormSource");
     bdg.fIncomeAmt = document.getElementById("incomeFormAmt");
-    bdg.fExpenseID = document.getElementById("expenseFormID");
-    bdg.fExpenseTxt = document.getElementById("expenseFormTxt");
-    bdg.fExpenseAmt = document.getElementById("expenseFormAmt");
-    bdg.fExpenseCategory = document.getElementById("expenseFormCategory");
+    bdg.hIncomeForm = document.getElementById("incomeForm");
 
-    bdg.entries = localStorage.getItem("entries");
-    if (bdg.entries == null) {
-      bdg.entries = [];
+    // Event listener for the form submission (using addEventListener)
+    bdg.hIncomeForm.addEventListener("submit", (e) => {
+      e.preventDefault(); // Prevent the default form submission
+      bdg.saveIncome(); // Call the save function
+    });
+    
+    // Optional: Add event listeners for toggling the form visibility
+    document.getElementById("newIncomeBtn").addEventListener("click", () => bdg.toggleIncome(true));
+    document.getElementById("incomeFormEnd").addEventListener("click", () => bdg.toggleIncome(false)); // Close button event
+  },
+
+  // Toggle income form visibility
+  toggleIncome: (showForm) => {
+    const incomeForm = bdg.hIncomeForm;
+    if (showForm) {
+      incomeForm.classList.remove("hidden"); // Show the form
     } else {
-      bdg.entries = JSON.parse(bdg.entries);
-    }
-
-    const monthSelect = document.getElementById("monthSelect");
-    const currentDate = new Date();
-    const currentMonth = currentDate.toLocaleString("default", {
-      month: "long",
-      year: "numeric",
-    });
-
-    const months = [];
-    for (let i = 0; i < 12; i++) {
-      const month = new Date(currentDate.getFullYear(), i);
-      const monthString = month.toLocaleString("default", {
-        month: "long",
-        year: "numeric",
-      });
-      months.push(monthString);
-    }
-
-    monthSelect.innerHTML = "";
-    months.forEach((month) => {
-      const option = document.createElement("option");
-      option.value = month;
-      option.textContent = month;
-      monthSelect.appendChild(option);
-    });
-
-    monthSelect.value = currentMonth;
-    bdg.selectedMonth = currentMonth;
-
-    monthSelect.addEventListener("change", (e) => {
-      bdg.selectedMonth = e.target.value;
-      bdg.draw();
-    });
-
-    bdg.draw();
-
-    if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
-      console.log("Service Worker is controlling the page");
+      incomeForm.classList.add("hidden"); // Hide the form
     }
   },
 
-  toggleIncome: (id) => {
-    console.log("Toggle income function called with id:", id);
-    if (id === false) {
-      bdg.fIncomeID.value = "";
-      bdg.fIncomeSource.value = "";
-      bdg.fIncomeAmt.value = "";
-      bdg.hIncomeForm.classList.add("hidden");
-    } else {
-      if (Number.isInteger(id)) {
-        bdg.fIncomeID.value = id;
-        bdg.fIncomeSource.value = bdg.entries[id].source;
-        bdg.fIncomeAmt.value = bdg.entries[id].a;
-      }
-      bdg.hIncomeForm.classList.remove("hidden");
-    }
-  },
-
-  toggleExpense: (id) => {
-    console.log("Toggle expense function called with id:", id);
-    if (id === false) {
-      bdg.fExpenseID.value = "";
-      bdg.fExpenseTxt.value = "";
-      bdg.fExpenseAmt.value = "";
-      bdg.fExpenseCategory.value = "needs";
-      bdg.hExpenseForm.classList.add("hidden");
-    } else {
-      if (Number.isInteger(id)) {
-        bdg.fExpenseID.value = id;
-        bdg.fExpenseTxt.value = bdg.entries[id].t;
-        bdg.fExpenseAmt.value = bdg.entries[id].a;
-        bdg.fExpenseCategory.value = bdg.entries[id].c;
-      }
-      bdg.hExpenseForm.classList.remove("hidden");
-    }
-  },
-
-  draw: () => {
-    let bal = 0,
-      inc = 0,
-      exp = 0,
-      row;
-
-    bdg.hList.innerHTML = "";
-    bdg.entries.forEach((entry, i) => {
-      const entryDate = new Date(entry.date);
-      const entryMonth = entryDate.toLocaleString("default", {
-        month: "long",
-        year: "numeric",
-      });
-      if (entryMonth === bdg.selectedMonth) {
-        if (entry.s == "+") {
-          inc += entry.a;
-          bal += entry.a;
-        } else {
-          exp += entry.a;
-          bal -= entry.a;
-        }
-        row = document.createElement("div");
-        row.className = `entry ${entry.s == "+" ? "income" : "expense"}`;
-        row.innerHTML = `<div class="eDel" onclick="bdg.del(${i})">X</div>
-        <div class="eTxt">${entry.t || entry.source}</div>
-        <div class="eCat">${entry.c || ""}</div>
-        <div class="eAmt">$${parseFloat(entry.a).toFixed(2)}</div>
-        <div class="eEdit" onclick="bdg.toggle(${i})">&#9998;</div>`;
-        bdg.hList.appendChild(row);
-      }
-    });
-
-    bdg.hBal.innerHTML =
-      bal < 0 ? `-$${Math.abs(bal).toFixed(2)}` : `$${bal.toFixed(2)}`;
-    bdg.hInc.innerHTML = `$${inc.toFixed(2)}`;
-    bdg.hExp.innerHTML = `$${exp.toFixed(2)}`;
-  },
-
-  saveIncome: () => {
+  // Save income to Firestore
+  saveIncome: async () => {
     let data = {
-      s: "+",
-      t: "",
-      a: parseFloat(bdg.fIncomeAmt.value),
-      c: "",
-      source: bdg.fIncomeSource.value,
-      date: new Date().toISOString(),
+      s: "+", // Income symbol (positive)
+      t: "",  // Title/Description (empty for now)
+      a: parseFloat(bdg.fIncomeAmt.value), // Amount (converted to float)
+      c: "",  // Category (empty for now)
+      source: bdg.fIncomeSource.value, // Source of income (from form input)
+      date: new Date().toISOString(), // Current date in ISO format
     };
 
-    if (bdg.fIncomeID.value == "") {
-      bdg.entries.push(data);
-    } else {
-      bdg.entries[parseInt(bdg.fIncomeID.value)] = data;
+    try {
+      // Add income data to the 'entradas' collection in Firestore
+      const docRef = await addDoc(collection(db, "entradas"), data);
+      console.log("Income document written with ID: ", docRef.id);
+      
+      // Optionally, you can clear the form fields and hide the form after submission
+      bdg.clearForm(); // Clear form after submitting
+      bdg.toggleIncome(false); // Hide form after saving
+    } catch (e) {
+      console.error("Error adding document: ", e);
     }
-    localStorage.setItem("entries", JSON.stringify(bdg.entries));
-
-    bdg.toggleIncome(false);
-    bdg.draw();
-    return false;
   },
 
-  saveExpense: () => {
-    // let data = {
-    //   s: "-",
-    //   t: bdg.fExpenseTxt.value,
-    //   a: parseFloat(bdg.fExpenseAmt.value),
-    //   c: bdg.fExpenseCategory.value,
-    //   source: "",
-    //   date: new Date().toISOString(),
-    // };
-
-    agregarEntrada(
-      "-",
-      bdg.fExpenseTxt.value,
-      parseFloat(bdg.fExpenseAmt.value),
-      bdg.fExpenseCategory.value,
-      "",
-      new Date().toISOString()
-    );
-
-    // if (bdg.fExpenseID.value == "") {
-    //   bdg.entries.push(data);
-    // } else {
-    //   bdg.entries[parseInt(bdg.fExpenseID.value)] = data;
-    // }
-    // localStorage.setItem("entries", JSON.stringify(bdg.entries));
-
-    // bdg.toggleExpense(false);
-    // bdg.draw();
-    // return false;
-  },
-
-  del: (id) => {
-    if (confirm("Delete entry?")) {
-      bdg.entries.splice(id, 1);
-      localStorage.setItem("entries", JSON.stringify(bdg.entries));
-      bdg.draw();
-    }
+  // Clear form fields after saving income
+  clearForm: () => {
+    bdg.fIncomeSource.value = '';
+    bdg.fIncomeAmt.value = '';
   },
 };
 
+// Initialize when the page loads
 window.onload = bdg.init;
+
+
+
+// let bdg = {
+//   data: null,
+//   hBal: null,
+//   hInc: null,
+//   hExp: null,
+//   hList: null,
+//   hIncomeForm: null,
+//   hExpenseForm: null,
+//   fIncomeID: null,
+//   fIncomeSource: null,
+//   fIncomeAmt: null,
+//   fExpenseID: null,
+//   fExpenseTxt: null,
+//   fExpenseAmt: null,
+//   fExpenseCategory: null,
+//   selectedMonth: null,
+
+//   init: () => {
+//     bdg.hBal = document.getElementById("balanceAm");
+//     bdg.hInc = document.getElementById("incomeAm");
+//     bdg.hExp = document.getElementById("expenseAm");
+//     bdg.hList = document.getElementById("list");
+//     bdg.hIncomeForm = document.getElementById("incomeForm");
+//     bdg.hExpenseForm = document.getElementById("expenseForm");
+//     bdg.fIncomeID = document.getElementById("incomeFormID");
+//     bdg.fIncomeSource = document.getElementById("incomeFormSource");
+//     bdg.fIncomeAmt = document.getElementById("incomeFormAmt");
+//     bdg.fExpenseID = document.getElementById("expenseFormID");
+//     bdg.fExpenseTxt = document.getElementById("expenseFormTxt");
+//     bdg.fExpenseAmt = document.getElementById("expenseFormAmt");
+//     bdg.fExpenseCategory = document.getElementById("expenseFormCategory");
+
+//     bdg.entries = localStorage.getItem("entries");
+//     if (bdg.entries == null) {
+//       bdg.entries = [];
+//     } else {
+//       bdg.entries = JSON.parse(bdg.entries);
+//     }
+
+//     const monthSelect = document.getElementById("monthSelect");
+//     const currentDate = new Date();
+//     const currentMonth = currentDate.toLocaleString("default", {
+//       month: "long",
+//       year: "numeric",
+//     });
+
+//     const months = [];
+//     for (let i = 0; i < 12; i++) {
+//       const month = new Date(currentDate.getFullYear(), i);
+//       const monthString = month.toLocaleString("default", {
+//         month: "long",
+//         year: "numeric",
+//       });
+//       months.push(monthString);
+//     }
+
+//     monthSelect.innerHTML = "";
+//     months.forEach((month) => {
+//       const option = document.createElement("option");
+//       option.value = month;
+//       option.textContent = month;
+//       monthSelect.appendChild(option);
+//     });
+
+//     monthSelect.value = currentMonth;
+//     bdg.selectedMonth = currentMonth;
+
+//     monthSelect.addEventListener("change", (e) => {
+//       bdg.selectedMonth = e.target.value;
+//       bdg.draw();
+//     });
+
+//     bdg.draw();
+
+//     if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+//       console.log("Service Worker is controlling the page");
+//     }
+//   },
+
+//   toggleIncome: (id) => {
+//     console.log("Toggle income function called with id:", id);
+//     if (id === false) {
+//       bdg.fIncomeID.value = "";
+//       bdg.fIncomeSource.value = "";
+//       bdg.fIncomeAmt.value = "";
+//       bdg.hIncomeForm.classList.add("hidden");
+//     } else {
+//       if (Number.isInteger(id)) {
+//         bdg.fIncomeID.value = id;
+//         bdg.fIncomeSource.value = bdg.entries[id].source;
+//         bdg.fIncomeAmt.value = bdg.entries[id].a;
+//       }
+//       bdg.hIncomeForm.classList.remove("hidden");
+//     }
+//   },
+
+//   toggleExpense: (id) => {
+//     console.log("Toggle expense function called with id:", id);
+//     if (id === false) {
+//       bdg.fExpenseID.value = "";
+//       bdg.fExpenseTxt.value = "";
+//       bdg.fExpenseAmt.value = "";
+//       bdg.fExpenseCategory.value = "needs";
+//       bdg.hExpenseForm.classList.add("hidden");
+//     } else {
+//       if (Number.isInteger(id)) {
+//         bdg.fExpenseID.value = id;
+//         bdg.fExpenseTxt.value = bdg.entries[id].t;
+//         bdg.fExpenseAmt.value = bdg.entries[id].a;
+//         bdg.fExpenseCategory.value = bdg.entries[id].c;
+//       }
+//       bdg.hExpenseForm.classList.remove("hidden");
+//     }
+//   },
+
+//   draw: () => {
+//     let bal = 0,
+//       inc = 0,
+//       exp = 0,
+//       row;
+
+//     bdg.hList.innerHTML = "";
+//     bdg.entries.forEach((entry, i) => {
+//       const entryDate = new Date(entry.date);
+//       const entryMonth = entryDate.toLocaleString("default", {
+//         month: "long",
+//         year: "numeric",
+//       });
+//       if (entryMonth === bdg.selectedMonth) {
+//         if (entry.s == "+") {
+//           inc += entry.a;
+//           bal += entry.a;
+//         } else {
+//           exp += entry.a;
+//           bal -= entry.a;
+//         }
+//         row = document.createElement("div");
+//         row.className = `entry ${entry.s == "+" ? "income" : "expense"}`;
+//         row.innerHTML = `<div class="eDel" onclick="bdg.del(${i})">X</div>
+//         <div class="eTxt">${entry.t || entry.source}</div>
+//         <div class="eCat">${entry.c || ""}</div>
+//         <div class="eAmt">$${parseFloat(entry.a).toFixed(2)}</div>
+//         <div class="eEdit" onclick="bdg.toggle(${i})">&#9998;</div>`;
+//         bdg.hList.appendChild(row);
+//       }
+//     });
+
+//     bdg.hBal.innerHTML =
+//       bal < 0 ? `-$${Math.abs(bal).toFixed(2)}` : `$${bal.toFixed(2)}`;
+//     bdg.hInc.innerHTML = `$${inc.toFixed(2)}`;
+//     bdg.hExp.innerHTML = `$${exp.toFixed(2)}`;
+//   },
+
+//   saveIncome: () => {
+//     let data = {
+//       s: "+",
+//       t: "",
+//       a: parseFloat(bdg.fIncomeAmt.value),
+//       c: "",
+//       source: bdg.fIncomeSource.value,
+//       date: new Date().toISOString(),
+//     };
+
+//     if (bdg.fIncomeID.value == "") {
+//       bdg.entries.push(data);
+//     } else {
+//       bdg.entries[parseInt(bdg.fIncomeID.value)] = data;
+//     }
+//     localStorage.setItem("entries", JSON.stringify(bdg.entries));
+
+//     bdg.toggleIncome(false);
+//     bdg.draw();
+//     return false;
+//   },
+
+//   saveExpense: () => {
+//     let data = {
+//       s: "-",
+//       t: bdg.fExpenseTxt.value,
+//       a: parseFloat(bdg.fExpenseAmt.value),
+//       c: bdg.fExpenseCategory.value,
+//       source: "",
+//       date: new Date().toISOString(),
+//     };
+
+//     agregarEntrada(
+//       "-",
+//       bdg.fExpenseTxt.value,
+//       parseFloat(bdg.fExpenseAmt.value),
+//       bdg.fExpenseCategory.value,
+//       "",
+//       new Date().toISOString()
+//     );
+
+//     if (bdg.fExpenseID.value == "") {
+//       bdg.entries.push(data);
+//     } else {
+//       bdg.entries[parseInt(bdg.fExpenseID.value)] = data;
+//     }
+//     localStorage.setItem("entries", JSON.stringify(bdg.entries));
+
+//     bdg.toggleExpense(false);
+//     bdg.draw();
+//     return false;
+//   },
+
+//   del: (id) => {
+//     if (confirm("Delete entry?")) {
+//       bdg.entries.splice(id, 1);
+//       localStorage.setItem("entries", JSON.stringify(bdg.entries));
+//       bdg.draw();
+//     }
+//   },
+// };
+
+// window.onload = bdg.init;

@@ -8,7 +8,7 @@
   <title>C-ACE Budget Tool</title>
   <link rel="icon" href="favicon.png" type="image/png">
   <link rel="stylesheet" href="style.css">
-  <link rel="manifest" href="manifest.json"> 
+  <link rel="manifest" href="manifest.json">
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js').then(registration => {
@@ -59,7 +59,10 @@
   </div>
   <div>
     <!-- New Test Button -->
-    <button id="testBtn" onclick="addTestDataToFirebase()">Test</button>
+    <button id="testBtn"
+      onclick="agregarEntrada(testData2.s, testData2.t, testData2.a, testData2.c, testData2.source, testData2.date)">
+      Test
+    </button>
   </div>
 
 
@@ -70,12 +73,12 @@
     </div>
 
     <div class="entry-card">
-      <button id="newIncomeBtn" onclick="bdg.toggleIncome(true)" aria-label="Create a new income">New Income</button>
+      <!-- Button to open the form (no onclick) -->
+      <button id="newIncomeBtn" aria-label="Create a new income">New Income</button>
       <div id="listIncome"></div>
       <section id="incomeForm" aria-labelledby="incomeFormTitle" class="hidden">
         <h2 id="incomeFormTitle">Income Form</h2>
-        <form onsubmit="return bdg.saveIncome()">
-          <button id="incomeFormEnd" onclick="bdg.toggleIncome(false)" aria-label="Close Form">X</button>
+        <form id="incomeForm" aria-labelledby="incomeFormTitle">
           <input type="hidden" id="incomeFormID">
           <label for="incomeFormSource">Income Source</label>
           <input type="text" id="incomeFormSource" aria-label="Income Source" required>
@@ -83,8 +86,11 @@
           <input type="number" id="incomeFormAmt" step="0.01" required>
           <button type="submit" id="incomeFormGo" aria-label="Save Income">Save</button>
         </form>
+        <!-- Close Button (no onclick) -->
+        <button id="incomeFormEnd" aria-label="Close Form">X</button>
       </section>
     </div>
+
 
     <div class="entry-card">
       <button id="newExpenseBtn" onclick="bdg.toggleExpense(true)" aria-label="Create a new expense">New
