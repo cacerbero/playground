@@ -1,15 +1,3 @@
-// import { initializeApp } from "firebase/app";
-// import {
-//   getFirestore,
-//   collection,
-//   addDoc,
-//   getDocs,
-//   updateDoc,
-//   doc,
-//   deleteDoc,
-//   Timestamp,
-// } from "firebase/firestore";
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import {
   getFirestore,
