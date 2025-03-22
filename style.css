@@ -42,7 +42,7 @@ header select:focus {
   outline: none;
 }
 
-#income img, #expense img {
+#balance img, #income img, #expense img {
   width: 50px;  
   height: auto; 
   max-width: 100%; 
