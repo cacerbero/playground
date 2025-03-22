@@ -9,16 +9,21 @@
 //   deleteDoc,
 //   Timestamp,
 // } from "firebase/firestore";
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import {
   getFirestore,
-  addDoc,
   collection,
+  addDoc,
+  getDocs,
+  query,
+  where,
+  deleteDoc,
   doc,
   Timestamp,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-// Your web app's Firebase configuration
+// Firebase Configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBiky1i346MS8w-S9fwyxvQ4zVy_Y3pSnY",
   authDomain: "playground-f462b.firebaseapp.com",
@@ -32,377 +37,323 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-async function addTestDataToFirebase() {
-  //object to be added
-  const testData = [
-    {
-      name: "Test 1",
-      amount: 100,
-      category: "Needs",
-      date: new Date().toISOString(),
-    },
-    {
-      name: "Test 2",
-      amount: 150,
-      category: "Wants",
-      date: new Date().toISOString(),
-    },
-    {
-      name: "Test 3",
-      amount: 200,
-      category: "Culture",
-      date: new Date().toISOString(),
-    },
-    {
-      name: "Test 4",
-      amount: 50,
-      category: "Unexpected",
-      date: new Date().toISOString(),
-    },
-    {
-      name: "Test 5",
-      amount: 250,
-      category: "Needs",
-      date: new Date().toISOString(),
-    },
-  ];
-
-  // Reference to your Firebase collection (change 'test' to your desired collection name)
-  const collectionRef = collection(db, "test");
-
-  // Add each test entry to the collection
-  for (const data of testData) {
-    try {
-      const docRef = await addDoc(collectionRef, data); // Correct usage of addDoc
-      console.log("Document written with ID: ", docRef.id);
-    } catch (e) {
-      console.error("Error adding document: ", e);
+// Separate visibility manager for toggling form visibility
+const visibilityManager = {
+  toggleIncomeForm: (show) => {
+    const incomeForm = document.getElementById("incomeForm");
+    if (incomeForm) {
+      incomeForm.classList.toggle("hidden", !show);
     }
-  }
-}
+  },
 
-// Call the function to add the data to Firebase
-addTestDataToFirebase();
-/*
-s: "+", represents the type of entry. "+" for income, "-" for expense.
-t: "",  represents the description of the income source (optional for income in this case).
-a: parseFloat(bdg.fIncomeAmt.value), // The amount of income.
-  c: "", This represents the category (left empty because income doesn't have a category in your case).
-  source: bdg.fIncomeSource.value, The source of the income (from the form input).
-  date: new Date().toISOString(),  The date when the income is recorded (current date)
-*/
-const testData2 = {
-  s: "-",
-  t: "Coffee for breakfast", // Description (replace with your own data)
-  a: 5.99, // Amount (replace with your own value)
-  c: "wants", // Category (replace with your own choice)
-  source: "cash", // Source (or leave blank as needed)
-  date: new Date().toISOString(), // Current date in ISO format
+  toggleExpenseForm: (show) => {
+    const expenseForm = document.getElementById("expenseForm");
+    if (expenseForm) {
+      expenseForm.classList.toggle("hidden", !show);
+    }
+  },
 };
 
-async function agregarEntrada(S1, T1, A1, C1, Su1, D1) {
-  try {
-    const docRef = await addDoc(collection(db, "entradas"), {
-      s: S1,
-      t: T1,
-      a: A1,
-      c: C1,
-      source: Su1,
-      date: D1,
-    });
-    console.log("Documento escrito con ID: ", docRef.id);
-  } catch (e) {
-    console.error("Error al añadir documento: ", e);
-  }
-}
-
-// Make the function accessible in the global window object
-window.agregarEntrada = agregarEntrada;
-window.testData2 = testData2;  // This makes 'testData' globally accessible
-
-
 let bdg = {
-  // Declare necessary DOM elements
   fIncomeSource: null,
   fIncomeAmt: null,
   hIncomeForm: null,
+  fExpenseTxt: null,
+  fExpenseAmt: null,
+  fExpenseCategory: null,
+  hExpenseForm: null,
+  selectedMonth: null,
+  balanceElement: null,
+  listIncomeElement: null, // Corrected list id for income
+  listExpenseElement: null, // Corrected list id for expense
 
-  // Initialize DOM elements
   init: () => {
+    // Income Form Elements
     bdg.fIncomeSource = document.getElementById("incomeFormSource");
     bdg.fIncomeAmt = document.getElementById("incomeFormAmt");
     bdg.hIncomeForm = document.getElementById("incomeForm");
 
-    // Event listener for the form submission (using addEventListener)
-    bdg.hIncomeForm.addEventListener("submit", (e) => {
-      e.preventDefault(); // Prevent the default form submission
-      bdg.saveIncome(); // Call the save function
+    // Expense Form Elements
+    bdg.fExpenseTxt = document.getElementById("expenseFormTxt");
+    bdg.fExpenseAmt = document.getElementById("expenseFormAmt");
+    bdg.fExpenseCategory = document.getElementById("expenseFormCategory");
+    bdg.hExpenseForm = document.getElementById("expenseForm");
+
+    // Summary Elements
+    bdg.balanceElement = document.getElementById("balanceAm");
+    bdg.incomeElement = document.getElementById("incomeAm"); // Agregamos referencia para Income
+    bdg.expenseElement = document.getElementById("expenseAm");
+
+    // Balance and list elements
+    bdg.listIncomeElement = document.getElementById("listIncome"); // Corrected list element for income
+    bdg.listExpenseElement = document.getElementById("listExpense"); // Corrected list element for expense
+
+    // Check if the balance element and list elements are found in the DOM
+    if (
+      !bdg.balanceElement ||
+      !bdg.listIncomeElement ||
+      !bdg.listExpenseElement
+    ) {
+      console.error("Balance or list element not found!");
+      return; // Stop initialization if balance or list elements are missing
+    }
+
+    // Month Select Element
+    const monthSelect = document.getElementById("monthSelect");
+
+    // Get current year and create an array of months
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+
+    // Array of month names
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    // Populate the month dropdown with the months of the current year
+    months.forEach((month, index) => {
+      const option = document.createElement("option");
+      option.value = `${currentYear}-${index + 1}`; // Value is "Year-Month"
+      option.textContent = `${month} ${currentYear}`;
+      monthSelect.appendChild(option);
     });
-    
-    // Optional: Add event listeners for toggling the form visibility
-    document.getElementById("newIncomeBtn").addEventListener("click", () => bdg.toggleIncome(true));
-    document.getElementById("incomeFormEnd").addEventListener("click", () => bdg.toggleIncome(false)); // Close button event
+
+    // Set the current month as the default selected value
+    const currentMonthIndex = currentDate.getMonth();
+    monthSelect.value = `${currentYear}-${currentMonthIndex + 1}`;
+
+    // Event listener for month selection change (to fetch entries)
+    monthSelect.addEventListener("change", (e) => {
+      bdg.selectedMonth = e.target.value; // Save the selected month
+      console.log("Selected month", bdg.selectedMonth);
+      bdg.fetchEntries(); // Fetch entries when month is changed
+      console.log("Selected Month:", bdg.selectedMonth);
+    });
   },
 
-  // Toggle income form visibility
-  toggleIncome: (showForm) => {
-    const incomeForm = bdg.hIncomeForm;
-    if (showForm) {
-      incomeForm.classList.remove("hidden"); // Show the form
-    } else {
-      incomeForm.classList.add("hidden"); // Hide the form
+  fetchEntries: async () => {
+    if (!bdg.selectedMonth) return; // If no month is selected, exit
+
+    // Correctly split the selected month into year and month index
+    const [year, monthIndex] = bdg.selectedMonth.split("-");
+    const month = parseInt(monthIndex) - 1; // Month is 0-based in JavaScript
+
+    // Create start and end dates for the selected month
+    const startDate = new Date(year, month, 1); // Start of the month
+    const endDate = new Date(year, month + 1, 1); // Start of the next month
+
+    // Convert the JavaScript Date objects into Firestore Timestamps
+    const startTimestamp = Timestamp.fromDate(startDate);
+    const endTimestamp = Timestamp.fromDate(endDate);
+
+    try {
+      // Query Firestore for entries in the selected month
+      const q = query(
+        collection(db, "entradas"),
+        where("date", ">=", startTimestamp),
+        where("date", "<", endTimestamp)
+      );
+
+      // Execute the query and get the results
+      const querySnapshot = await getDocs(q);
+      let totalIncome = 0;
+      let totalExpense = 0;
+
+      // Clear previous entries from the UI
+      bdg.listIncomeElement.innerHTML = "";
+      bdg.listExpenseElement.innerHTML = "";
+
+      // Loop through the Firestore documents and display them
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+
+        // Creating and styling the delete button
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "X";
+        deleteButton.style.fontSize = "12px";
+        deleteButton.style.color = "white";
+        deleteButton.style.backgroundColor = "red";
+        deleteButton.style.border = "none";
+        deleteButton.style.padding = "5px";
+        deleteButton.style.marginLeft = "5px";
+        deleteButton.style.cursor = "pointer";
+
+        // Create a new div for each entry
+        const entryItem = document.createElement("div");
+        entryItem.textContent = `${data.source || data.t} ${
+          data.s === "+" ? "(Income)" : "(Expense)"
+        }: $${data.a}`;
+
+        // Attach the click event to delete the entry
+        deleteButton.addEventListener("click", async () => {
+          await bdg.deleteEntry(doc.id); // Deleting entry from FStore
+          bdg.fetchEntries();
+        });
+
+        // Add the delete button to the entry item
+        entryItem.appendChild(deleteButton);
+
+        // Add the entry to the appropriate list (Income or Expense)
+        if (data.s === "+") {
+          bdg.listIncomeElement.appendChild(entryItem);
+          totalIncome += data.a;
+        } else if (data.s === "-") {
+          bdg.listExpenseElement.appendChild(entryItem);
+          totalExpense += data.a;
+        }
+      });
+
+      // Calculate and display balance
+      const balance = totalIncome - totalExpense;
+      bdg.incomeElement.textContent = `$${totalIncome.toFixed(2)}`;
+      bdg.expenseElement.textContent = `$${totalExpense.toFixed(2)}`;
+      bdg.balanceElement.textContent = `$${balance.toFixed(2)}`;
+
+      console.log("Total Income:", totalIncome);
+      console.log("Total Expense:", totalExpense);
+      console.log("Balance:", balance);
+    } catch (e) {
+      console.error("Error fetching entries: ", e);
     }
   },
 
-  // Save income to Firestore
+  // Method to delete an entry from Firestore
+  deleteEntry: async function (docId) {
+    try {
+      await deleteDoc(doc(db, "entradas", docId));
+      console.log("Entry deleted:", docId);
+    } catch (e) {
+      console.error("Error deleting entry: ", e);
+    }
+  },
+
   saveIncome: async () => {
+    if (!bdg.selectedMonth) {
+      console.error("No month selected.");
+      return; // Exit the function if no month is selected
+    }
+    const selectedDateParts = bdg.selectedMonth.split("-"); // Extract Year and Month from selected value
+    const selectedYear = selectedDateParts[0];
+    const selectedMonth = parseInt(selectedDateParts[1]) - 1; // Month is 0-based in Date constructor
+
+    const date = new Date(selectedYear, selectedMonth, 1); // First day of selected month
+
     let data = {
       s: "+", // Income symbol (positive)
-      t: "",  // Title/Description (empty for now)
+      t: "", // Title/Description (empty for now)
       a: parseFloat(bdg.fIncomeAmt.value), // Amount (converted to float)
-      c: "",  // Category (empty for now)
+      c: "", // Category (empty for now)
       source: bdg.fIncomeSource.value, // Source of income (from form input)
-      date: new Date().toISOString(), // Current date in ISO format
+      date: Timestamp.fromDate(date), // Use the selected month date as the Timestamp
     };
 
     try {
-      // Add income data to the 'entradas' collection in Firestore
+      // Add income data to Firestore
       const docRef = await addDoc(collection(db, "entradas"), data);
       console.log("Income document written with ID: ", docRef.id);
-      
-      // Optionally, you can clear the form fields and hide the form after submission
+
+      // Clear form and hide the income form after submission
       bdg.clearForm(); // Clear form after submitting
-      bdg.toggleIncome(false); // Hide form after saving
+      visibilityManager.toggleIncomeForm(false); // Hide form after saving
+
+      // Re-fetch entries to update the UI
+      bdg.fetchEntries();
     } catch (e) {
       console.error("Error adding document: ", e);
     }
   },
 
-  // Clear form fields after saving income
+  saveExpense: async () => {
+    if (!bdg.selectedMonth) {
+      console.error("No month selected.");
+      return; // Exit the function if no month is selected
+    }
+    const selectedDateParts = bdg.selectedMonth.split("-"); // Extract Year and Month from selected value
+    const selectedYear = selectedDateParts[0];
+    const selectedMonth = parseInt(selectedDateParts[1]) - 1; // Month is 0-based in Date constructor
+
+    const date = new Date(selectedYear, selectedMonth, 1); // First day of selected month
+
+    let data = {
+      s: "-", // Expense symbol (negative)
+      t: bdg.fExpenseTxt.value, // Description of the expense
+      a: parseFloat(bdg.fExpenseAmt.value), // Amount (converted to float)
+      c: bdg.fExpenseCategory.value, // Category (from dropdown)
+      source: "", // No source for expense
+      date: Timestamp.fromDate(date), // Use the selected month date as the Timestamp
+    };
+
+    try {
+      // Add expense data to Firestore
+      const docRef = await addDoc(collection(db, "entradas"), data);
+      console.log("Expense document written with ID: ", docRef.id);
+
+      // Clear form and hide the expense form after submission
+      bdg.clearExpenseForm(); // Clear expense form after submitting
+      visibilityManager.toggleExpenseForm(false); // Hide form after saving
+
+      // Re-fetch entries to update the UI
+      bdg.fetchEntries();
+    } catch (e) {
+      console.error("Error adding document: ", e);
+    }
+  },
+
+  // Helper functions for clearing forms
   clearForm: () => {
-    bdg.fIncomeSource.value = '';
-    bdg.fIncomeAmt.value = '';
+    bdg.fIncomeAmt.value = "";
+    bdg.fIncomeSource.value = "";
+  },
+
+  clearExpenseForm: () => {
+    bdg.fExpenseTxt.value = "";
+    bdg.fExpenseAmt.value = "";
+    bdg.fExpenseCategory.value = "";
   },
 };
 
-// Initialize when the page loads
-window.onload = bdg.init;
+// Event listeners for toggles and form submissions
+window.onload = () => {
+  bdg.init();
 
+  // Add event listener for New Income Button
+  document.getElementById("newIncomeBtn").addEventListener("click", () => {
+    visibilityManager.toggleIncomeForm(true);
+  });
 
+  // Add event listener for New Expense Button
+  document.getElementById("newExpenseBtn").addEventListener("click", () => {
+    visibilityManager.toggleExpenseForm(true);
+  });
 
-// let bdg = {
-//   data: null,
-//   hBal: null,
-//   hInc: null,
-//   hExp: null,
-//   hList: null,
-//   hIncomeForm: null,
-//   hExpenseForm: null,
-//   fIncomeID: null,
-//   fIncomeSource: null,
-//   fIncomeAmt: null,
-//   fExpenseID: null,
-//   fExpenseTxt: null,
-//   fExpenseAmt: null,
-//   fExpenseCategory: null,
-//   selectedMonth: null,
+  // Event listener for form submissions
+  bdg.hIncomeForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    bdg.saveIncome();
+  });
 
-//   init: () => {
-//     bdg.hBal = document.getElementById("balanceAm");
-//     bdg.hInc = document.getElementById("incomeAm");
-//     bdg.hExp = document.getElementById("expenseAm");
-//     bdg.hList = document.getElementById("list");
-//     bdg.hIncomeForm = document.getElementById("incomeForm");
-//     bdg.hExpenseForm = document.getElementById("expenseForm");
-//     bdg.fIncomeID = document.getElementById("incomeFormID");
-//     bdg.fIncomeSource = document.getElementById("incomeFormSource");
-//     bdg.fIncomeAmt = document.getElementById("incomeFormAmt");
-//     bdg.fExpenseID = document.getElementById("expenseFormID");
-//     bdg.fExpenseTxt = document.getElementById("expenseFormTxt");
-//     bdg.fExpenseAmt = document.getElementById("expenseFormAmt");
-//     bdg.fExpenseCategory = document.getElementById("expenseFormCategory");
+  bdg.hExpenseForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    bdg.saveExpense();
+  });
 
-//     bdg.entries = localStorage.getItem("entries");
-//     if (bdg.entries == null) {
-//       bdg.entries = [];
-//     } else {
-//       bdg.entries = JSON.parse(bdg.entries);
-//     }
+  // Add event listener for closing forms
+  document.getElementById("incomeFormEnd").addEventListener("click", () => {
+    visibilityManager.toggleIncomeForm(false);
+  });
 
-//     const monthSelect = document.getElementById("monthSelect");
-//     const currentDate = new Date();
-//     const currentMonth = currentDate.toLocaleString("default", {
-//       month: "long",
-//       year: "numeric",
-//     });
-
-//     const months = [];
-//     for (let i = 0; i < 12; i++) {
-//       const month = new Date(currentDate.getFullYear(), i);
-//       const monthString = month.toLocaleString("default", {
-//         month: "long",
-//         year: "numeric",
-//       });
-//       months.push(monthString);
-//     }
-
-//     monthSelect.innerHTML = "";
-//     months.forEach((month) => {
-//       const option = document.createElement("option");
-//       option.value = month;
-//       option.textContent = month;
-//       monthSelect.appendChild(option);
-//     });
-
-//     monthSelect.value = currentMonth;
-//     bdg.selectedMonth = currentMonth;
-
-//     monthSelect.addEventListener("change", (e) => {
-//       bdg.selectedMonth = e.target.value;
-//       bdg.draw();
-//     });
-
-//     bdg.draw();
-
-//     if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
-//       console.log("Service Worker is controlling the page");
-//     }
-//   },
-
-//   toggleIncome: (id) => {
-//     console.log("Toggle income function called with id:", id);
-//     if (id === false) {
-//       bdg.fIncomeID.value = "";
-//       bdg.fIncomeSource.value = "";
-//       bdg.fIncomeAmt.value = "";
-//       bdg.hIncomeForm.classList.add("hidden");
-//     } else {
-//       if (Number.isInteger(id)) {
-//         bdg.fIncomeID.value = id;
-//         bdg.fIncomeSource.value = bdg.entries[id].source;
-//         bdg.fIncomeAmt.value = bdg.entries[id].a;
-//       }
-//       bdg.hIncomeForm.classList.remove("hidden");
-//     }
-//   },
-
-//   toggleExpense: (id) => {
-//     console.log("Toggle expense function called with id:", id);
-//     if (id === false) {
-//       bdg.fExpenseID.value = "";
-//       bdg.fExpenseTxt.value = "";
-//       bdg.fExpenseAmt.value = "";
-//       bdg.fExpenseCategory.value = "needs";
-//       bdg.hExpenseForm.classList.add("hidden");
-//     } else {
-//       if (Number.isInteger(id)) {
-//         bdg.fExpenseID.value = id;
-//         bdg.fExpenseTxt.value = bdg.entries[id].t;
-//         bdg.fExpenseAmt.value = bdg.entries[id].a;
-//         bdg.fExpenseCategory.value = bdg.entries[id].c;
-//       }
-//       bdg.hExpenseForm.classList.remove("hidden");
-//     }
-//   },
-
-//   draw: () => {
-//     let bal = 0,
-//       inc = 0,
-//       exp = 0,
-//       row;
-
-//     bdg.hList.innerHTML = "";
-//     bdg.entries.forEach((entry, i) => {
-//       const entryDate = new Date(entry.date);
-//       const entryMonth = entryDate.toLocaleString("default", {
-//         month: "long",
-//         year: "numeric",
-//       });
-//       if (entryMonth === bdg.selectedMonth) {
-//         if (entry.s == "+") {
-//           inc += entry.a;
-//           bal += entry.a;
-//         } else {
-//           exp += entry.a;
-//           bal -= entry.a;
-//         }
-//         row = document.createElement("div");
-//         row.className = `entry ${entry.s == "+" ? "income" : "expense"}`;
-//         row.innerHTML = `<div class="eDel" onclick="bdg.del(${i})">X</div>
-//         <div class="eTxt">${entry.t || entry.source}</div>
-//         <div class="eCat">${entry.c || ""}</div>
-//         <div class="eAmt">$${parseFloat(entry.a).toFixed(2)}</div>
-//         <div class="eEdit" onclick="bdg.toggle(${i})">&#9998;</div>`;
-//         bdg.hList.appendChild(row);
-//       }
-//     });
-
-//     bdg.hBal.innerHTML =
-//       bal < 0 ? `-$${Math.abs(bal).toFixed(2)}` : `$${bal.toFixed(2)}`;
-//     bdg.hInc.innerHTML = `$${inc.toFixed(2)}`;
-//     bdg.hExp.innerHTML = `$${exp.toFixed(2)}`;
-//   },
-
-//   saveIncome: () => {
-//     let data = {
-//       s: "+",
-//       t: "",
-//       a: parseFloat(bdg.fIncomeAmt.value),
-//       c: "",
-//       source: bdg.fIncomeSource.value,
-//       date: new Date().toISOString(),
-//     };
-
-//     if (bdg.fIncomeID.value == "") {
-//       bdg.entries.push(data);
-//     } else {
-//       bdg.entries[parseInt(bdg.fIncomeID.value)] = data;
-//     }
-//     localStorage.setItem("entries", JSON.stringify(bdg.entries));
-
-//     bdg.toggleIncome(false);
-//     bdg.draw();
-//     return false;
-//   },
-
-//   saveExpense: () => {
-//     let data = {
-//       s: "-",
-//       t: bdg.fExpenseTxt.value,
-//       a: parseFloat(bdg.fExpenseAmt.value),
-//       c: bdg.fExpenseCategory.value,
-//       source: "",
-//       date: new Date().toISOString(),
-//     };
-
-//     agregarEntrada(
-//       "-",
-//       bdg.fExpenseTxt.value,
-//       parseFloat(bdg.fExpenseAmt.value),
-//       bdg.fExpenseCategory.value,
-//       "",
-//       new Date().toISOString()
-//     );
-
-//     if (bdg.fExpenseID.value == "") {
-//       bdg.entries.push(data);
-//     } else {
-//       bdg.entries[parseInt(bdg.fExpenseID.value)] = data;
-//     }
-//     localStorage.setItem("entries", JSON.stringify(bdg.entries));
-
-//     bdg.toggleExpense(false);
-//     bdg.draw();
-//     return false;
-//   },
-
-//   del: (id) => {
-//     if (confirm("Delete entry?")) {
-//       bdg.entries.splice(id, 1);
-//       localStorage.setItem("entries", JSON.stringify(bdg.entries));
-//       bdg.draw();
-//     }
-//   },
-// };
-
-// window.onload = bdg.init;
+  document.getElementById("expenseFormEnd").addEventListener("click", () => {
+    visibilityManager.toggleExpenseForm(false);
+  });
+};
