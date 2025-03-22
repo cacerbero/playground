@@ -6,7 +6,7 @@
   <meta name="description" content="Budget Planner">
   <meta name="viewport" content="width=device-width, initial-scale=1.5">
   <title>C-ACE Budget Tool</title>
-  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="icon" href="./icons/favicon.ico" type="image/png" alt="C-ACE Budget Tool Favicon">
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
   <script>
@@ -48,37 +48,33 @@
     </section>
 
     <section id="income">
+      <img src="icons/piggy-bank-1022853_960_720.png" alt="Piggy Income" />
       <h2>Income</h2>
       <div id="incomeAm">$0</div>
     </section>
 
     <section id="expense">
+      <img src="icons/wolf-emblem.png" alt="Wolf Expense" />
       <h2>Expense</h2>
       <div id="expenseAm">$0</div>
     </section>
   </div>
-  <div>
-    <!-- New Test Button -->
-    <button id="testBtn"
-      onclick="agregarEntrada(testData2.s, testData2.t, testData2.a, testData2.c, testData2.source, testData2.date)">
-      Test
-    </button>
-  </div>
-
+  
 
   <section id="entries">
     <div class="entry-card" id="listCard">
       <h2>Entries</h2>
       <div id="list"></div>
+      <div id="listExpense"></div> 
+      <div id="listIncome"></div>
     </div>
 
     <div class="entry-card">
       <!-- Button to open the form (no onclick) -->
       <button id="newIncomeBtn" aria-label="Create a new income">New Income</button>
-      <div id="listIncome"></div>
       <section id="incomeForm" aria-labelledby="incomeFormTitle" class="hidden">
         <h2 id="incomeFormTitle">Income Form</h2>
-        <form id="incomeForm" aria-labelledby="incomeFormTitle">
+        <form id="incomeForm" aria-labelledby="incomeFormTitle" aria-live="assertive">
           <input type="hidden" id="incomeFormID">
           <label for="incomeFormSource">Income Source</label>
           <input type="text" id="incomeFormSource" aria-label="Income Source" required>
@@ -93,16 +89,13 @@
 
 
     <div class="entry-card">
-      <button id="newExpenseBtn" onclick="bdg.toggleExpense(true)" aria-label="Create a new expense">New
-        Expense</button>
-      <div id="listExpense"></div>
+      <button id="newExpenseBtn" aria-label="Create a new expense">New Expense</button>
       <section id="expenseForm" aria-labelledby="expenseFormTitle" class="hidden">
         <h2 id="expenseFormTitle">Expense Form</h2>
-        <form onsubmit="return bdg.saveExpense()">
-          <button id="expenseFormEnd" onclick="bdg.toggleExpense(false)" aria-label="Close Form">X</button>
+        <form id="expenseForm" aria-labelledby="expenseFormTitle">
           <input type="hidden" id="expenseFormID">
           <label for="expenseFormTxt">Description</label>
-          <input type="text" id="expenseFormTxt" required>
+          <input type="text" id="expenseFormTxt" aria-label="Description" required>
           <label for="expenseFormAmt">Amount</label>
           <input type="number" id="expenseFormAmt" step="0.01" required>
           <label for="expenseFormCategory">Category</label>
@@ -112,10 +105,14 @@
             <option value="culture">Culture</option>
             <option value="unexpected">Unexpected</option>
           </select>
+
+          <!-- Save Expense Button -->
           <button type="submit" id="expenseFormGo" aria-label="Save Expense">Save</button>
         </form>
+        <button id="expenseFormEnd" aria-label="Close Form">X</button>
       </section>
     </div>
+
   </section>
   <script type="module" src="app.js"></script>
 </body>
