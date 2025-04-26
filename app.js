@@ -11,7 +11,7 @@ import {
   Timestamp,
   getDoc,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Chatbot variables
 let genAI;
@@ -35,10 +35,22 @@ const db = getFirestore(app);
 // Chatbot initialization
 async function getApiKey() {
   try {
-    const snapshot = await getDoc(doc(db, "apikey", "googlegenai"));
+    const docRef = doc(db, "apikey", "googlegenai");
+    const snapshot = await getDoc(docRef);
+    
+    if (!snapshot.exists()) {
+      console.error("API key document not found in Firestore");
+      return;
+    }
+    
     apiKey = snapshot.data().key;
+    if (!apiKey) {
+      console.error("API key is empty in Firestore document");
+      return;
+    }
+    
     genAI = new GoogleGenerativeAI(apiKey);
-    model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    model = genAI.getGenerativeModel({ model: "gemini-pro" });
     console.log("Chatbot initialized successfully");
   } catch (error) {
     console.error("Error initializing chatbot:", error);
