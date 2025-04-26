@@ -9,7 +9,14 @@ import {
   deleteDoc,
   doc,
   Timestamp,
+  getDoc,
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+// Chatbot variables
+let genAI;
+let model;
+let apiKey;
 
 // Firebase Configuration
 const firebaseConfig = {
@@ -24,6 +31,30 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+// Chatbot initialization
+async function getApiKey() {
+  try {
+    const snapshot = await getDoc(doc(db, "apikey", "googlegenai"));
+    apiKey = snapshot.data().key;
+    genAI = new GoogleGenerativeAI(apiKey);
+    model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    console.log("Chatbot initialized successfully");
+  } catch (error) {
+    console.error("Error initializing chatbot:", error);
+  }
+}
+
+async function askChatBot(request) {
+  try {
+    const result = await model.generateContent(request);
+    const response = await result.response;
+    return response.text();
+  } catch (error) {
+    console.error("Error asking chatbot:", error);
+    return "Sorry, I encountered an error. Please try again.";
+  }
+}
 
 // Separate visibility manager for toggling form visibility
 const visibilityManager = {
@@ -54,6 +85,9 @@ let bdg = {
   balanceElement: null,
   listIncomeElement: null, // Corrected list id for income
   listExpenseElement: null, // Corrected list id for expense
+  chatHistory: null,
+  chatInput: null,
+  sendButton: null,
 
   init: () => {
     // Income Form Elements
@@ -128,6 +162,41 @@ let bdg = {
       bdg.fetchEntries(); // Fetch entries when month is changed
       console.log("Selected Month:", bdg.selectedMonth);
     });
+
+    // Initialize chatbot elements
+    bdg.chatHistory = document.getElementById("chat-history");
+    bdg.chatInput = document.getElementById("chat-input");
+    bdg.sendButton = document.getElementById("send-btn");
+    const minimizeButton = document.getElementById("minimize-chat");
+    const chatbotContainer = document.getElementById("chatbot-container");
+
+    // Add minimize functionality
+    if (minimizeButton && chatbotContainer) {
+      minimizeButton.addEventListener("click", () => {
+        chatbotContainer.classList.toggle("minimized");
+      });
+    }
+
+    // Initialize chatbot
+    getApiKey().then(() => {
+      console.log("Chatbot ready");
+    }).catch(error => {
+      console.error("Failed to initialize chatbot:", error);
+    });
+
+    // Add event listener for send button
+    if (bdg.sendButton) {
+      bdg.sendButton.addEventListener("click", () => bdg.handleChatMessage());
+    }
+
+    // Add event listener for Enter key in chat input
+    if (bdg.chatInput) {
+      bdg.chatInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          bdg.handleChatMessage();
+        }
+      });
+    }
   },
 
   fetchEntries: async () => {
@@ -308,6 +377,53 @@ let bdg = {
     bdg.fExpenseTxt.value = "";
     bdg.fExpenseAmt.value = "";
     bdg.fExpenseCategory.value = "";
+  },
+
+  handleChatMessage: async function() {
+    const message = this.chatInput.value.trim();
+    if (!message) return;
+
+    // Add user message to chat history
+    this.appendMessage("You: " + message);
+
+    // Process the message
+    if (message.toLowerCase().startsWith("add income")) {
+      const amount = message.replace("add income", "").trim();
+      if (amount) {
+        this.fIncomeAmt.value = amount;
+        await this.saveIncome();
+        this.appendMessage("Bot: Income added successfully!");
+      } else {
+        this.appendMessage("Bot: Please specify an amount for the income.");
+      }
+    } else if (message.toLowerCase().startsWith("add expense")) {
+      const parts = message.replace("add expense", "").trim().split(" ");
+      if (parts.length >= 2) {
+        const amount = parts[0];
+        const category = parts.slice(1).join(" ");
+        this.fExpenseAmt.value = amount;
+        this.fExpenseCategory.value = category;
+        await this.saveExpense();
+        this.appendMessage("Bot: Expense added successfully!");
+      } else {
+        this.appendMessage("Bot: Please specify an amount and category for the expense.");
+      }
+    } else {
+      // If no specific command, ask the chatbot
+      const response = await askChatBot(message);
+      this.appendMessage("Bot: " + response);
+    }
+
+    // Clear input
+    this.chatInput.value = "";
+  },
+
+  appendMessage: function(message) {
+    const messageDiv = document.createElement("div");
+    messageDiv.textContent = message;
+    messageDiv.className = "history";
+    this.chatHistory.appendChild(messageDiv);
+    this.chatHistory.scrollTop = this.chatHistory.scrollHeight;
   },
 };
 

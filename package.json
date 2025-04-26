@@ -1,0 +1,17 @@
+{
+  "name": "kakeibo-budget",
+  "version": "1.0.0",
+  "description": "Budget tracking application with chatbot",
+  "main": "app.js",
+  "scripts": {
+    "start": "firebase emulators:start",
+    "deploy": "firebase deploy"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.1.3",
+    "firebase": "^9.6.1"
+  },
+  "devDependencies": {
+    "firebase-tools": "^12.0.0"
+  }
+} 
