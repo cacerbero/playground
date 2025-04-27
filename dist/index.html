@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="Budget Planner">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="apple-touch-icon" href="/assets/favicon-ChohV-yk.ico">
+  <title>C-ACE Budget Tool</title>
+  <link rel="icon" href="/assets/favicon-ChohV-yk.ico" type="image/png" alt="C-ACE Budget Tool Favicon">
+  <link rel="manifest" href="/assets/manifest-CqttYfJ_.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js').then(registration => {
+        console.log('Service Worker registered with scope:', registration.scope);
+      }).catch(error => {
+        console.log('Service Worker registration failed:', error);
+      });
+    }
+  </script>
+
+  <!-- <script src="app.js" defer></script> -->
+  <style>
+    /* ... existing styles ... */
+
+    #chatbot-container {
+      width: 300px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: white;
+      box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+    }
+
+    #chat-history {
+      height: 200px;
+      overflow-y: auto;
+      border-bottom: 1px solid #ccc;
+      margin-bottom: 10px;
+      padding: 5px;
+    }
+
+    #chat-input {
+      width: calc(100% - 60px);
+      padding: 5px;
+      margin-right: 5px;
+    }
+
+    #send-btn {
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    .history {
+      padding-bottom: 15px;
+      word-wrap: break-word;
+    }
+  </style>
+  <script type="module" crossorigin src="/assets/index-Ce_Tx-Xe.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-Cl5Wiv5f.css">
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-CBX7MYS8PL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  gtag('js', new Date());
+
+  gtag('config', 'G-CBX7MYS8PL');
+</script>
+
+<body>
+  <header>
+    <h1>Kakeibo Budget</h1>
+    <div>
+      <label for="monthSelect">Select Month:</label>
+      <select id="monthSelect" aria-label="Select Month"></select>
+    </div>
+  </header>
+
+  <div id="summary">
+    <section id="balance">
+      <img src="/assets/balancing-scale_3951029-B7fynzSs.png" alt="Piggy Income" />
+
+      <h2>Balance</h2>
+      <div id="balanceAm">$0</div>
+    </section>
+
+    <section id="income">
+      <img src="/assets/piggy-bank-1022853_960_720-U0GSI5Um.png" alt="Piggy Income" />
+      <h2>Income</h2>
+      <div id="incomeAm">$0</div>
+    </section>
+
+    <section id="expense">
+      <img src="/assets/wolf-emblem-DYsaTOzT.png" alt="Wolf Expense" />
+      <h2>Expense</h2>
+      <div id="expenseAm">$0</div>
+    </section>
+  </div>
+  
+
+  <section id="entries">
+    <div class="entry-card" id="listCard">
+      <h2>Entries</h2>
+      <div id="list"></div>
+      <div id="listExpense"></div> 
+      <div id="listIncome"></div>
+    </div>
+
+    <div class="entry-card">
+      <!-- Button to open the form (no onclick) -->
+      <button id="newIncomeBtn" aria-label="Create a new income">New Income</button>
+      <section id="incomeForm" aria-labelledby="incomeFormTitle" class="hidden">
+        <h2 id="incomeFormTitle">Income Form</h2>
+        <form id="incomeForm" aria-labelledby="incomeFormTitle" aria-live="assertive">
+          <input type="hidden" id="incomeFormID">
+          <label for="incomeFormSource">Income Source</label>
+          <input type="text" id="incomeFormSource" aria-label="Income Source" required>
+          <label for="incomeFormAmt">Amount</label>
+          <input type="number" id="incomeFormAmt" step="0.01" required>
+          <button type="submit" id="incomeFormGo" aria-label="Save Income">Save</button>
+        </form>
+        <!-- Close Button (no onclick) -->
+        <button id="incomeFormEnd" aria-label="Close Form">X</button>
+      </section>
+    </div>
+
+
+    <div class="entry-card">
+      <button id="newExpenseBtn" aria-label="Create a new expense">New Expense</button>
+      <section id="expenseForm" aria-labelledby="expenseFormTitle" class="hidden">
+        <h2 id="expenseFormTitle">Expense Form</h2>
+        <form id="expenseForm" aria-labelledby="expenseFormTitle">
+          <input type="hidden" id="expenseFormID">
+          <label for="expenseFormTxt">Description</label>
+          <input type="text" id="expenseFormTxt" aria-label="Description" required>
+          <label for="expenseFormAmt">Amount</label>
+          <input type="number" id="expenseFormAmt" step="0.01" required>
+          <label for="expenseFormCategory">Category</label>
+          <select id="expenseFormCategory" required>
+            <option value="needs">Needs</option>
+            <option value="wants">Wants</option>
+            <option value="culture">Culture</option>
+            <option value="unexpected">Unexpected</option>
+          </select>
+
+          <!-- Save Expense Button -->
+          <button type="submit" id="expenseFormGo" aria-label="Save Expense">Save</button>
+        </form>
+        <button id="expenseFormEnd" aria-label="Close Form">X</button>
+      </section>
+    </div>
+
+  </section>
+  <div id="chatbot-container">
+    <div class="chat-header">
+      <h3>Budget Assistant</h3>
+      <button id="minimize-chat" aria-label="Minimize chat">_</button>
+    </div>
+    <div id="chat-history"></div>
+    <div class="chat-input-container">
+      <input type="text" id="chat-input" placeholder="Type your message... (e.g., 'add income 500' or 'add expense 100 groceries')" aria-label="Chat input">
+      <button id="send-btn" aria-label="Send message">Send</button>
+    </div>
+  </div>
+</body>
+
+</html>

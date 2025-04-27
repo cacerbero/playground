@@ -49,21 +49,51 @@ async function getApiKey() {
       return;
     }
     
+    console.log("Initializing Generative AI with API key");
     genAI = new GoogleGenerativeAI(apiKey);
+    console.log("Generative AI initialized, getting model");
     model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    console.log("Chatbot initialized successfully");
+    console.log("Model initialized successfully");
+    
+    // Test the model with a simple request
+    try {
+      const testResult = await model.generateContent("Hello");
+      console.log("Test request successful:", testResult);
+    } catch (testError) {
+      console.error("Test request failed:", testError);
+    }
   } catch (error) {
     console.error("Error initializing chatbot:", error);
+    console.error("Error details:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
   }
 }
 
 async function askChatBot(request) {
   try {
+    if (!model) {
+      console.error("Model not initialized");
+      return "Sorry, the chatbot is not properly initialized. Please refresh the page.";
+    }
+
+    console.log("Sending request to model:", request);
     const result = await model.generateContent(request);
+    console.log("Model response received:", result);
+    
     const response = await result.response;
+    console.log("Response text:", response.text());
+    
     return response.text();
   } catch (error) {
-    console.error("Error asking chatbot:", error);
+    console.error("Error in askChatBot:", error);
+    console.error("Error details:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     return "Sorry, I encountered an error. Please try again.";
   }
 }
